@@ -196,11 +196,10 @@ export default function HierarchyPage() {
         {/* Node Card */}
         <div
           onClick={() => setSelectedId(pos.id)}
-          className={`group flex items-center justify-between p-2.5 my-1 rounded-xl cursor-pointer border transition-all duration-150 ${
-            isSelected
+          className={`group flex items-center justify-between p-2.5 my-1 rounded-xl cursor-pointer border transition-all duration-150 ${isSelected
               ? 'bg-blue-50 border-blue-500 shadow-sm dark:bg-blue-950/40 dark:border-blue-500'
               : 'bg-white hover:bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800/60'
-          } ${isHighlighted && searchQuery ? 'ring-2 ring-amber-400' : ''}`}
+            } ${isHighlighted && searchQuery ? 'ring-2 ring-amber-400' : ''}`}
           style={{ marginLeft: `${depth * 24}px` }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -229,13 +228,12 @@ export default function HierarchyPage() {
 
             {/* Role Badge / Icon */}
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
-                pos.parentId === null
+              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${pos.parentId === null
                   ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
                   : hasChildren
-                  ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
-                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-              }`}
+                    ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
+                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                }`}
             >
               {pos.name.substring(0, 2).toUpperCase()}
             </div>
@@ -244,9 +242,8 @@ export default function HierarchyPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span
-                  className={`font-semibold text-sm truncate ${
-                    isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
-                  }`}
+                  className={`font-semibold text-sm truncate ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
+                    }`}
                 >
                   {pos.name}
                 </span>
@@ -337,7 +334,7 @@ export default function HierarchyPage() {
             </div>
             <div>
               <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                Perago Information Systems
+                Peragon Information Systems
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Organization Employee Hierarchy & Structure Management
