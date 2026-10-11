@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   title: "Peragon — Employee Hierarchy Management",
   description: "Interactive Organization Employee Hierarchy & Role Structure Management System",
   icons: {
-    icon: "/favicon.ico",
+    icon: "/icon.svg",
   },
 };
 
