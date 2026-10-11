@@ -322,14 +322,17 @@ export default function HierarchyPage() {
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                />
+            {/* Folder Tree Structure / Organization Hierarchy Icon */}
+            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/20 select-none">
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {/* Vertical spine and branch connectors */}
+                <path d="M3 3v18" />
+                <path d="M3 8h6" />
+                <path d="M3 16h6" />
+                {/* Upper folder / node */}
+                <path d="M9 5h10a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H9z" />
+                {/* Lower folder / node */}
+                <path d="M9 13h10a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H9z" />
               </svg>
             </div>
             <div>
