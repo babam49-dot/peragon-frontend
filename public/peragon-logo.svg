@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="peragonGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563EB" />
+      <stop offset="50%" stop-color="#4F46E5" />
+      <stop offset="100%" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="peragonLetter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#EEF2FF" />
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <!-- Background Squircle Badge -->
+  <rect width="64" height="64" rx="16" fill="url(#peragonGrad)" />
+  
+  <!-- Modern Geometric "P" Letterform -->
+  <path
+    d="M19 14 H34 C43 14 47 18.5 47 26.5 C47 34.5 43 39 34 39 H27.5 V50 H19 V14 Z M27.5 21.5 V31.5 H33.5 C37.5 31.5 39 29.5 39 26.5 C39 23.5 37.5 21.5 33.5 21.5 H27.5 Z"
+    fill="url(#peragonLetter)"
+    filter="url(#shadow)"
+  />
+  
+  <!-- Subtle Organizational Node Accent in loop -->
+  <circle cx="34" cy="26.5" r="3" fill="#60A5FA" />
+</svg>
