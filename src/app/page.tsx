@@ -587,9 +587,6 @@ export default function HierarchyPage() {
                       </Badge>
                     )}
                   </div>
-                  <span className="text-xs text-slate-400 font-mono mt-1 block truncate max-w-xs">
-                    UUID: {selectedPosition.id}
-                  </span>
                 </div>
 
                 <div className="flex items-center gap-1">
