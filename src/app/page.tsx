@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   Modal,
   Button,
@@ -12,18 +12,18 @@ import {
   Stack,
   ActionIcon,
   Tooltip,
+  Loader,
 } from '@mantine/core';
+import {
+  fetchPositions,
+  createPosition,
+  updatePosition,
+  deletePosition,
+  Position,
+} from '../services/api';
 
-// Model matching requirements
-export interface Position {
-  id: string;
-  name: string;
-  description: string;
-  parentId: string | null;
-}
-
-// Initial organization hierarchy matching the README
-const INITIAL_POSITIONS: Position[] = [
+// Initial organization hierarchy matching the project requirements
+const INITIAL_POSITIONS = [
   { id: '1', name: 'CEO', description: 'Chief Executive Officer - Leading overall company strategy', parentId: null },
   { id: '2', name: 'CTO', description: 'Chief Technology Officer - Overseeing engineering & technical vision', parentId: '1' },
   { id: '3', name: 'Project Manager', description: 'Managing cross-functional project planning & execution', parentId: '2' },
@@ -47,10 +47,15 @@ const INITIAL_POSITIONS: Position[] = [
 ];
 
 export default function HierarchyPage() {
-  const [positions, setPositions] = useState<Position[]>(INITIAL_POSITIONS);
-  const [selectedId, setSelectedId] = useState<string>('1');
+  const [positions, setPositions] = useState<Position[]>([]);
+  const [selectedId, setSelectedId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState('');
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
+
+  // Async States
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Modal States
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -64,9 +69,52 @@ export default function HierarchyPage() {
     parentId: null,
   });
 
+  // Fetch positions from NestJS API (supports silent background sync without flickering)
+  const loadPositions = useCallback(async (silent = false) => {
+    if (!silent) setIsLoading(true);
+    setApiError(null);
+    try {
+      const data = await fetchPositions();
+      setPositions(data);
+      if (data.length > 0) {
+        setSelectedId((prev) => (data.some((p) => p.id === prev) ? prev : data[0].id));
+      } else {
+        setSelectedId('');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Could not connect to NestJS backend';
+      console.error('Error fetching positions from backend:', err);
+      setApiError(msg);
+    } finally {
+      if (!silent) setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // 1. Initial load on page mount
+    loadPositions(false);
+
+    // 2. Auto-sync interval: checks for changes in Neon every 3 seconds silently
+    const interval = setInterval(() => {
+      loadPositions(true);
+    }, 3000);
+
+    // 3. Instant tab-switch sync: refreshes the moment you switch back from Neon/Swagger
+    const handleFocus = () => {
+      loadPositions(true);
+    };
+    window.addEventListener('focus', handleFocus);
+
+    // Cleanup interval and listener on unmount
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadPositions]);
+
   // Selected position details
   const selectedPosition = useMemo(
-    () => positions.find((p) => p.id === selectedId) || positions[0],
+    () => positions.find((p) => p.id === selectedId) || (positions.length > 0 ? positions[0] : null),
     [positions, selectedId]
   );
 
@@ -78,7 +126,10 @@ export default function HierarchyPage() {
 
   // Find direct children of selected position
   const selectedChildren = useMemo(
-    () => (selectedPosition ? positions.filter((p) => p.parentId === selectedPosition.id) : []),
+    () =>
+      selectedPosition
+        ? positions.filter((p) => (p.parentId ? p.parentId : null) === selectedPosition.id)
+        : [],
     [positions, selectedPosition]
   );
 
@@ -98,7 +149,11 @@ export default function HierarchyPage() {
 
   const expandAll = () => setCollapsedIds(new Set());
   const collapseAll = () => {
-    const allParentIds = new Set(positions.filter((p) => positions.some((c) => c.parentId === p.id)).map((p) => p.id));
+    const allParentIds = new Set(
+      positions
+        .filter((p) => positions.some((c) => (c.parentId ? c.parentId : null) === p.id))
+        .map((p) => p.id)
+    );
     setCollapsedIds(allParentIds);
   };
 
@@ -116,62 +171,99 @@ export default function HierarchyPage() {
   const openEditModal = (pos: Position) => {
     setFormData({
       name: pos.name,
-      description: pos.description,
+      description: pos.description || '',
       parentId: pos.parentId,
     });
     setIsEditOpen(true);
   };
 
-  // Handle Save New Position
-  const handleCreatePosition = () => {
+  // Handle Save New Position via API
+  const handleCreatePosition = async () => {
     if (!formData.name.trim()) return;
-    const newPos: Position = {
-      id: Date.now().toString(),
-      name: formData.name.trim(),
-      description: formData.description.trim(),
-      parentId: formData.parentId,
-    };
-    setPositions((prev) => [...prev, newPos]);
-    setSelectedId(newPos.id);
-    setIsCreateOpen(false);
+    setIsSaving(true);
+    try {
+      const created = await createPosition({
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        parentId: formData.parentId || null,
+      });
+      await loadPositions();
+      setSelectedId(created.id);
+      setIsCreateOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error creating position';
+      alert(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Handle Update Position
-  const handleUpdatePosition = () => {
+  // Handle Update Position via API
+  const handleUpdatePosition = async () => {
     if (!selectedPosition || !formData.name.trim()) return;
-    setPositions((prev) =>
-      prev.map((p) =>
-        p.id === selectedPosition.id
-          ? { ...p, name: formData.name.trim(), description: formData.description.trim() }
-          : p
-      )
-    );
-    setIsEditOpen(false);
+    setIsSaving(true);
+    try {
+      await updatePosition(selectedPosition.id, {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+      });
+      await loadPositions();
+      setIsEditOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error updating position';
+      alert(msg);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Handle Delete Position
-  const handleDeletePosition = () => {
+  // Handle Delete Position via API
+  const handleDeletePosition = async () => {
     if (!selectedPosition) return;
-    // Remove selected and cascade remove its children
-    const getDescendants = (id: string): string[] => {
-      const direct = positions.filter((p) => p.parentId === id);
-      return [id, ...direct.flatMap((d) => getDescendants(d.id))];
-    };
-    const toRemove = new Set(getDescendants(selectedPosition.id));
-    const remaining = positions.filter((p) => !toRemove.has(p.id));
+    setIsSaving(true);
+    try {
+      await deletePosition(selectedPosition.id);
+      await loadPositions();
+      setIsDeleteOpen(false);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error deleting position';
+      alert(msg);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
-    setPositions(remaining);
-    setSelectedId(remaining[0]?.id || '');
-    setIsDeleteOpen(false);
+  // Seed sample hierarchy directly into the database
+  const handleSeedPositions = async () => {
+    setIsSaving(true);
+    try {
+      const idMap = new Map<string, string>();
+      for (const item of INITIAL_POSITIONS) {
+        const parentUuid = item.parentId ? idMap.get(item.parentId) || null : null;
+        const created = await createPosition({
+          name: item.name,
+          description: item.description,
+          parentId: parentUuid,
+        });
+        idMap.set(item.id, created.id);
+      }
+      await loadPositions();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Error seeding positions';
+      alert(`Error seeding positions: ${msg}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Build recursive tree map
   const treeRoots = useMemo(() => {
     const map = new Map<string | null, Position[]>();
     positions.forEach((pos) => {
-      const list = map.get(pos.parentId) || [];
+      const parentKey = pos.parentId ? pos.parentId : null;
+      const list = map.get(parentKey) || [];
       list.push(pos);
-      map.set(pos.parentId, list);
+      map.set(parentKey, list);
     });
     return { map, roots: map.get(null) || [] };
   }, [positions]);
@@ -180,7 +272,10 @@ export default function HierarchyPage() {
   const matchesSearch = (pos: Position): boolean => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    return pos.name.toLowerCase().includes(q) || pos.description.toLowerCase().includes(q);
+    return (
+      pos.name.toLowerCase().includes(q) ||
+      (pos.description ? pos.description.toLowerCase().includes(q) : false)
+    );
   };
 
   // Recursive Tree Node Renderer
@@ -196,10 +291,11 @@ export default function HierarchyPage() {
         {/* Node Card */}
         <div
           onClick={() => setSelectedId(pos.id)}
-          className={`group flex items-center justify-between p-2.5 my-1 rounded-xl cursor-pointer border transition-all duration-150 ${isSelected
+          className={`group flex items-center justify-between p-2.5 my-1 rounded-xl cursor-pointer border transition-all duration-150 ${
+            isSelected
               ? 'bg-blue-50 border-blue-500 shadow-sm dark:bg-blue-950/40 dark:border-blue-500'
               : 'bg-white hover:bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800/60'
-            } ${isHighlighted && searchQuery ? 'ring-2 ring-amber-400' : ''}`}
+          } ${isHighlighted && searchQuery ? 'ring-2 ring-amber-400' : ''}`}
           style={{ marginLeft: `${depth * 24}px` }}
         >
           <div className="flex items-center gap-2.5 min-w-0">
@@ -228,12 +324,13 @@ export default function HierarchyPage() {
 
             {/* Role Badge / Icon */}
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${pos.parentId === null
+              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+                !pos.parentId
                   ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
                   : hasChildren
-                    ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
-                    : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                }`}
+                  ? 'bg-indigo-500 text-white shadow-sm shadow-indigo-500/20'
+                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+              }`}
             >
               {pos.name.substring(0, 2).toUpperCase()}
             </div>
@@ -242,14 +339,15 @@ export default function HierarchyPage() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span
-                  className={`font-semibold text-sm truncate ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
-                    }`}
+                  className={`font-semibold text-sm truncate ${
+                    isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
+                  }`}
                 >
                   {pos.name}
                 </span>
-                {pos.parentId === null && (
+                {!pos.parentId && (
                   <Badge size="xs" color="yellow" variant="light">
-                    Root / CEO
+                    Root / Top Level
                   </Badge>
                 )}
                 {hasChildren && (
@@ -322,23 +420,25 @@ export default function HierarchyPage() {
       <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-4">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {/* Folder Tree Structure / Organization Hierarchy Icon */}
+            {/* Logo */}
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/20 select-none">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {/* Vertical spine and branch connectors */}
                 <path d="M3 3v18" />
                 <path d="M3 8h6" />
                 <path d="M3 16h6" />
-                {/* Upper folder / node */}
                 <path d="M9 5h10a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H9z" />
-                {/* Lower folder / node */}
                 <path d="M9 13h10a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H9z" />
               </svg>
             </div>
             <div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">
-                Peragon Information Systems
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+                  Peragon Information Systems
+                </h1>
+                <Badge size="xs" color="teal" variant="light">
+                  Live API Connected
+                </Badge>
+              </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Organization Employee Hierarchy & Structure Management
               </p>
@@ -358,16 +458,36 @@ export default function HierarchyPage() {
               size="sm"
               onClick={() => openCreateModal(selectedId || null)}
               className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+              disabled={positions.length === 0}
             >
               + Add Subordinate
             </Button>
+            <Tooltip label="Refresh hierarchy from database" withArrow>
+              <ActionIcon variant="light" size="lg" onClick={loadPositions} loading={isLoading}>
+                🔄
+              </ActionIcon>
+            </Tooltip>
           </div>
         </div>
       </header>
 
+      {/* API Error Notification */}
+      {apiError && (
+        <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-900 px-6 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+              <span>⚠️ <strong>Backend Connection Notice:</strong> {apiError}</span>
+            </div>
+            <Button size="xs" color="red" variant="light" onClick={loadPositions}>
+              Retry Connection
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Main Content: Two-Column SPA Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Organization Tree (8 cols) */}
+        {/* Left Column: Organization Tree (7 cols) */}
         <section className="lg:col-span-7 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
           {/* Tree Controls Toolbar */}
           <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
@@ -387,10 +507,10 @@ export default function HierarchyPage() {
               />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="subtle" size="xs" color="gray" onClick={expandAll}>
+              <Button variant="subtle" size="xs" color="gray" onClick={expandAll} disabled={positions.length === 0}>
                 Expand All
               </Button>
-              <Button variant="subtle" size="xs" color="gray" onClick={collapseAll}>
+              <Button variant="subtle" size="xs" color="gray" onClick={collapseAll} disabled={positions.length === 0}>
                 Collapse All
               </Button>
             </div>
@@ -398,13 +518,41 @@ export default function HierarchyPage() {
 
           {/* Tree Node List */}
           <div className="flex-1 p-4 overflow-y-auto max-h-[calc(100vh-250px)]">
-            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 px-1">
-              Organization Structure ({positions.length} Total Positions)
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 px-1 flex items-center justify-between">
+              <span>Organization Structure ({positions.length} Total Positions)</span>
+              {isLoading && <Loader size="xs" />}
             </div>
 
-            {treeRoots.roots.length === 0 ? (
-              <div className="text-center py-12 text-slate-400">
-                No positions found. Create your first position above.
+            {isLoading && positions.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
+                <Loader size="md" />
+                <span className="text-sm">Loading hierarchy from Neon database...</span>
+              </div>
+            ) : treeRoots.roots.length === 0 ? (
+              <div className="text-center py-16 px-4 bg-slate-50/50 dark:bg-slate-800/20 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 my-4">
+                <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center mx-auto mb-3 text-xl">
+                  🏢
+                </div>
+                <h3 className="font-semibold text-slate-800 dark:text-slate-200 mb-1">
+                  No positions in database yet
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-4">
+                  Your Neon PostgreSQL database is connected and ready. You can create your root position or populate the standard 20 positions.
+                </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Button size="xs" onClick={() => openCreateModal(null)}>
+                    + Create Root Position
+                  </Button>
+                  <Button
+                    size="xs"
+                    variant="outline"
+                    color="indigo"
+                    onClick={handleSeedPositions}
+                    loading={isSaving}
+                  >
+                    🚀 Seed Standard 20 Positions
+                  </Button>
+                </div>
               </div>
             ) : (
               treeRoots.roots.map((root) => renderTreeNode(root, 0))
@@ -429,9 +577,9 @@ export default function HierarchyPage() {
                     <h2 className="text-xl font-bold text-slate-900 dark:text-white">
                       {selectedPosition.name}
                     </h2>
-                    {selectedPosition.parentId === null ? (
+                    {!selectedPosition.parentId ? (
                       <Badge color="yellow" variant="filled">
-                        Top Hierarchy
+                        Root Position
                       </Badge>
                     ) : (
                       <Badge color="blue" variant="light">
@@ -439,8 +587,8 @@ export default function HierarchyPage() {
                       </Badge>
                     )}
                   </div>
-                  <span className="text-xs text-slate-400 font-mono mt-1 block">
-                    ID: {selectedPosition.id}
+                  <span className="text-xs text-slate-400 font-mono mt-1 block truncate max-w-xs">
+                    UUID: {selectedPosition.id}
                   </span>
                 </div>
 
@@ -605,11 +753,11 @@ export default function HierarchyPage() {
           />
 
           <Group justify="flex-end" mt="md">
-            <Button variant="default" onClick={() => setIsCreateOpen(false)}>
+            <Button variant="default" onClick={() => setIsCreateOpen(false)} disabled={isSaving}>
               Cancel
             </Button>
-            <Button onClick={handleCreatePosition} disabled={!formData.name.trim()}>
-              Save Position
+            <Button onClick={handleCreatePosition} loading={isSaving} disabled={!formData.name.trim()}>
+              Save to Database
             </Button>
           </Group>
         </Stack>
@@ -639,10 +787,10 @@ export default function HierarchyPage() {
           />
 
           <Group justify="flex-end" mt="md">
-            <Button variant="default" onClick={() => setIsEditOpen(false)}>
+            <Button variant="default" onClick={() => setIsEditOpen(false)} disabled={isSaving}>
               Cancel
             </Button>
-            <Button onClick={handleUpdatePosition} disabled={!formData.name.trim()}>
+            <Button onClick={handleUpdatePosition} loading={isSaving} disabled={!formData.name.trim()}>
               Update Position
             </Button>
           </Group>
@@ -659,20 +807,20 @@ export default function HierarchyPage() {
       >
         <Stack gap="sm">
           <p className="text-sm text-slate-600 dark:text-slate-300">
-            Are you sure you want to remove <span className="font-bold">{selectedPosition?.name}</span>?
+            Are you sure you want to remove <span className="font-bold">{selectedPosition?.name}</span> from the database?
           </p>
           {selectedChildren.length > 0 && (
             <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 rounded-xl text-xs text-red-700 dark:text-red-300">
               ⚠️ <strong>Warning:</strong> This position has {selectedChildren.length} subordinate
-              role(s). Deleting it will also remove its entire sub-hierarchy!
+              role(s). Deleting it will also remove its direct hierarchy!
             </div>
           )}
 
           <Group justify="flex-end" mt="md">
-            <Button variant="default" onClick={() => setIsDeleteOpen(false)}>
+            <Button variant="default" onClick={() => setIsDeleteOpen(false)} disabled={isSaving}>
               Cancel
             </Button>
-            <Button color="red" onClick={handleDeletePosition}>
+            <Button color="red" onClick={handleDeletePosition} loading={isSaving}>
               Confirm Delete
             </Button>
           </Group>
