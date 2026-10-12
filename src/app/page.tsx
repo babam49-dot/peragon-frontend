@@ -463,7 +463,7 @@ export default function HierarchyPage() {
               + Add Subordinate
             </Button>
             <Tooltip label="Refresh hierarchy from database" withArrow>
-              <ActionIcon variant="light" size="lg" onClick={loadPositions} loading={isLoading}>
+              <ActionIcon variant="light" size="lg" onClick={() => loadPositions(false)} loading={isLoading}>
                 🔄
               </ActionIcon>
             </Tooltip>
@@ -478,7 +478,7 @@ export default function HierarchyPage() {
             <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
               <span>⚠️ <strong>Backend Connection Notice:</strong> {apiError}</span>
             </div>
-            <Button size="xs" color="red" variant="light" onClick={loadPositions}>
+            <Button size="xs" color="red" variant="light" onClick={() => loadPositions(false)}>
               Retry Connection
             </Button>
           </div>
