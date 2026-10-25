@@ -287,24 +287,23 @@ export default function HierarchyPage() {
     const isHighlighted = searchQuery && matchesSearch(pos);
 
     return (
-      <div key={pos.id} className="relative">
+      <div key={pos.id} className="relative w-full">
         {/* Node Card */}
         <div
           onClick={() => setSelectedId(pos.id)}
-          className={`group flex items-center justify-between p-2.5 my-1 rounded-xl cursor-pointer border transition-all duration-150 ${
+          className={`group flex items-center justify-between p-2 sm:p-2.5 my-1 rounded-xl cursor-pointer border transition-all duration-150 ${
             isSelected
               ? 'bg-blue-50 border-blue-500 shadow-sm dark:bg-blue-950/40 dark:border-blue-500'
               : 'bg-white hover:bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 dark:hover:bg-slate-800/60'
           } ${isHighlighted && searchQuery ? 'ring-2 ring-amber-400' : ''}`}
-          style={{ marginLeft: `${depth * 24}px` }}
         >
-          <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
             {/* Expand / Collapse Icon */}
             {hasChildren ? (
               <button
                 type="button"
                 onClick={(e) => toggleCollapse(pos.id, e)}
-                className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
+                className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors"
                 title={isCollapsed ? 'Expand' : 'Collapse'}
               >
                 <svg
@@ -317,14 +316,14 @@ export default function HierarchyPage() {
                 </svg>
               </button>
             ) : (
-              <span className="w-5 h-5 flex items-center justify-center text-slate-300 dark:text-slate-700">
+              <span className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-slate-300 dark:text-slate-700">
                 •
               </span>
             )}
 
             {/* Role Badge / Icon */}
             <div
-              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${
+              className={`w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0 rounded-lg flex items-center justify-center text-[10px] sm:text-xs font-bold ${
                 !pos.parentId
                   ? 'bg-amber-500 text-white shadow-sm shadow-amber-500/30'
                   : hasChildren
@@ -336,34 +335,34 @@ export default function HierarchyPage() {
             </div>
 
             {/* Role Title and Direct Reports Counter */}
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                 <span
-                  className={`font-semibold text-sm truncate ${
+                  className={`font-semibold text-xs sm:text-sm truncate ${
                     isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-slate-900 dark:text-slate-100'
                   }`}
                 >
                   {pos.name}
                 </span>
                 {!pos.parentId && (
-                  <Badge size="xs" color="yellow" variant="light">
-                    Root / Top Level
+                  <Badge size="xs" color="yellow" variant="light" className="flex-shrink-0 text-[10px]">
+                    Root
                   </Badge>
                 )}
                 {hasChildren && (
-                  <Badge size="xs" color="gray" variant="outline">
+                  <Badge size="xs" color="gray" variant="outline" className="flex-shrink-0 text-[10px]">
                     {children.length} {children.length === 1 ? 'report' : 'reports'}
                   </Badge>
                 )}
               </div>
-              <p className="text-xs text-slate-500 truncate max-w-md dark:text-slate-400">
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate max-w-full dark:text-slate-400">
                 {pos.description || 'No description provided'}
               </p>
             </div>
           </div>
 
-          {/* Quick Actions (Add Subordinate, Edit, Delete) */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          {/* Quick Actions (Add Subordinate, Edit, Delete) - Shown on desktop hover */}
+          <div className="hidden sm:flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             <Tooltip label="Add Direct Subordinate" withArrow>
               <ActionIcon
                 size="sm"
@@ -406,7 +405,7 @@ export default function HierarchyPage() {
 
         {/* Recursive Children Container */}
         {hasChildren && !isCollapsed && (
-          <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-4 pl-1">
+          <div className="border-l-2 border-slate-200 dark:border-slate-800 ml-2.5 sm:ml-4 pl-1 sm:pl-2">
             {children.map((child) => renderTreeNode(child, depth + 1))}
           </div>
         )}
@@ -415,13 +414,13 @@ export default function HierarchyPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 flex flex-col font-sans overflow-x-hidden w-full">
       {/* Top Header */}
-      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-3 py-3 sm:px-6 sm:py-4 w-full">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Logo */}
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/20 select-none">
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/20 select-none">
               <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 3v18" />
                 <path d="M3 8h6" />
@@ -430,40 +429,40 @@ export default function HierarchyPage() {
                 <path d="M9 13h10a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H9z" />
               </svg>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-none">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h1 className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-white leading-tight">
                   Peragon Information Systems
                 </h1>
-                <Badge size="xs" color="teal" variant="light">
+                <Badge size="xs" color="teal" variant="light" className="flex-shrink-0">
                   Live API Connected
                 </Badge>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Organization Employee Hierarchy & Structure Management
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <Button
               variant="outline"
-              size="sm"
+              size="xs"
               onClick={() => openCreateModal(null)}
-              className="border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300"
+              className="flex-1 sm:flex-none border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 text-xs"
             >
-              + New Root Position
+              + New Root
             </Button>
             <Button
-              size="sm"
+              size="xs"
               onClick={() => openCreateModal(selectedId || null)}
-              className="bg-blue-600 hover:bg-blue-700 shadow-sm"
+              className="flex-1 sm:flex-none bg-blue-600 hover:bg-blue-700 shadow-sm text-xs"
               disabled={positions.length === 0}
             >
               + Add Subordinate
             </Button>
             <Tooltip label="Refresh hierarchy from database" withArrow>
-              <ActionIcon variant="light" size="lg" onClick={() => loadPositions(false)} loading={isLoading}>
+              <ActionIcon variant="light" size="md" onClick={() => loadPositions(false)} loading={isLoading} className="flex-shrink-0">
                 🔄
               </ActionIcon>
             </Tooltip>
@@ -473,9 +472,9 @@ export default function HierarchyPage() {
 
       {/* API Error Notification */}
       {apiError && (
-        <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-900 px-6 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-2 text-sm text-red-700 dark:text-red-300">
+        <div className="bg-red-50 dark:bg-red-950/40 border-b border-red-200 dark:border-red-900 px-3 py-2.5 sm:px-6 sm:py-3 w-full">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-red-700 dark:text-red-300">
               <span>⚠️ <strong>Backend Connection Notice:</strong> {apiError}</span>
             </div>
             <Button size="xs" color="red" variant="light" onClick={() => loadPositions(false)}>
@@ -486,12 +485,12 @@ export default function HierarchyPage() {
       )}
 
       {/* Main Content: Two-Column SPA Layout */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 overflow-x-hidden">
         {/* Left Column: Organization Tree (7 cols) */}
-        <section className="lg:col-span-7 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        <section className="lg:col-span-7 flex flex-col bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden w-full">
           {/* Tree Controls Toolbar */}
-          <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/50">
-            <div className="flex-1 min-w-[200px]">
+          <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 bg-slate-50/50 dark:bg-slate-900/50 w-full">
+            <div className="w-full sm:flex-1 sm:min-w-[200px]">
               <TextInput
                 placeholder="Search position or role..."
                 value={searchQuery}
@@ -506,7 +505,7 @@ export default function HierarchyPage() {
                 }
               />
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-end gap-2 w-full sm:w-auto">
               <Button variant="subtle" size="xs" color="gray" onClick={expandAll} disabled={positions.length === 0}>
                 Expand All
               </Button>
@@ -517,7 +516,7 @@ export default function HierarchyPage() {
           </div>
 
           {/* Tree Node List */}
-          <div className="flex-1 p-4 overflow-y-auto max-h-[calc(100vh-250px)]">
+          <div className="flex-1 p-2.5 sm:p-4 overflow-y-auto max-h-[50vh] sm:max-h-[calc(100vh-250px)] w-full">
             <div className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2 px-1 flex items-center justify-between">
               <span>Organization Structure ({positions.length} Total Positions)</span>
               {isLoading && <Loader size="xs" />}
@@ -561,28 +560,28 @@ export default function HierarchyPage() {
         </section>
 
         {/* Right Column: Selected Position Detail Inspector (5 cols) */}
-        <aside className="lg:col-span-5 flex flex-col gap-6">
+        <aside className="lg:col-span-5 flex flex-col gap-4 sm:gap-6 w-full">
           {selectedPosition ? (
             <Card
               shadow="sm"
-              padding="lg"
+              padding="md"
               radius="lg"
               withBorder
-              className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 sticky top-24"
+              className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 lg:sticky lg:top-24 w-full"
             >
               {/* Header with Title and Actions */}
-              <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-4 mb-4">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              <div className="flex items-start justify-between gap-2 border-b border-slate-100 dark:border-slate-800 pb-3 sm:pb-4 mb-3 sm:mb-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white truncate">
                       {selectedPosition.name}
                     </h2>
                     {!selectedPosition.parentId ? (
-                      <Badge color="yellow" variant="filled">
+                      <Badge color="yellow" variant="filled" size="xs" className="flex-shrink-0">
                         Root Position
                       </Badge>
                     ) : (
-                      <Badge color="blue" variant="light">
+                      <Badge color="blue" variant="light" size="xs" className="flex-shrink-0">
                         Level Role
                       </Badge>
                     )}
