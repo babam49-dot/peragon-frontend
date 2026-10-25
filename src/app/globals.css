@@ -31,3 +31,47 @@ body {
     text-wrap: balance;
   }
 }
+
+/* Global viewport overflow protection */
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+/* Mobile responsive rules (@media query for mobile devices including iPhone SE) */
+@media screen and (max-width: 640px) {
+  html,
+  body {
+    font-size: 14px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Prevent horizontal blowout from any nested container */
+  * {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Ensure Mantine inputs and buttons fit mobile viewport */
+  .mantine-TextInput-root,
+  .mantine-Textarea-root,
+  .mantine-Button-root {
+    max-width: 100%;
+  }
+
+  /* Keep badge text tidy on narrow screens */
+  .mantine-Badge-root {
+    white-space: nowrap;
+    font-size: 10px;
+    padding: 0 6px;
+    height: 18px;
+  }
+
+  /* Optimize modal dialog for small phone screens */
+  .mantine-Modal-content {
+    max-width: calc(100vw - 24px) !important;
+    margin: 12px auto !important;
+  }
+}
